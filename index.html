@@ -80,13 +80,22 @@ async function reply(raw) {
     say('AI connection failed. Please try again.');
     statusEl.textContent = 'Connection error';
   }
-}document.getElementById('send').onclick=()=>reply(ask.value);
-ask.addEventListener('keydown',e=>{if(e.key==='Enter')reply(ask.value)});
-document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>reply(b.dataset.q));
-document.getElementById('mic').onclick=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){statusEl.textContent='Speech recognition is not supported in this browser. You can type instead.';return;}const r=new SR();r.lang='en-IN';r.onstart=()=>statusEl.textContent='Listening…';r.onresult=e=>{ask.value=e.results[0][0].transcript;reply(ask.value)};r.onerror=()=>statusEl.textContent='Microphone unavailable. Check browser permission.';r.onend=()=>statusEl.textContent='Voice features depend on your browser and permissions.';r.start();};
-function tick(){document.getElementById('clock').textContent=new Date().toLocaleString();}tick();setInterval(tick,1000);
-let deferredPrompt;const installBtn=document.getElementById('install');
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.style.display='block';});
-installBtn.onclick=async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;installBtn.style.display='none';};
-if('serviceWorker'in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
-</script></body></html>
+}document.getElementById('mic').onclick=()=>{
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){
+    statusEl.textContent='Speech recognition is not supported.';
+    return;
+  }
+  const choice=prompt('Choose language:\n1 - Tamil\n2 - English','1');
+  if(choice===null)return;
+  const r=new SR();
+  r.lang=choice.trim()==='2'?'en-IN':'ta-IN';
+  r.onstart=()=>statusEl.textContent='Listening...';
+  r.onresult=e=>{
+    ask.value=e.results[0][0].transcript;
+    reply(ask.value);
+  };
+  r.onerror=()=>statusEl.textContent='Voice not recognized. Try again.';
+  r.onend=()=>statusEl.textContent='JARVIS AI Online';
+  r.start();
+};
