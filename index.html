@@ -80,7 +80,9 @@ async function reply(raw) {
     say('AI connection failed. Please try again.');
     statusEl.textContent = 'Connection error';
   }
-}document.getElementById('mic').onclick=()=>{
+}
+
+document.getElementById('mic').onclick=()=>{
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){
     statusEl.textContent='Speech recognition is not supported.';
