@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071426">
+<meta name="description" content="JARVIS personal assistant">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<title>J.A.R.V.I.S. — Personal Assistant</title>
+<style>
+:root{color-scheme:dark;--bg:#071426;--panel:#10243a;--line:#24435f;--blue:#57cfff;--txt:#e8f4ff;--muted:#9bb2c8}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 0,#153653,var(--bg) 55%);font:16px system-ui;color:var(--txt);min-height:100vh}
+main{max-width:760px;margin:auto;padding:22px 16px 36px}.brand{display:flex;align-items:center;gap:14px;margin:12px 0 24px}
+.logo{width:66px;height:66px;border:1px solid var(--blue);border-radius:50%;display:grid;place-items:center;color:var(--blue);font-size:34px;box-shadow:0 0 22px #38bdf855}
+h1{font-size:24px;letter-spacing:5px;margin:0}.sub{color:var(--muted);font-size:12px;letter-spacing:2px}
+.tabs,.panel{background:#0d2034;border:1px solid var(--line);border-radius:22px;padding:18px;margin:14px 0}
+h2{font-size:26px;margin:4px 0 8px}.muted{color:var(--muted)}.tag{color:var(--blue);letter-spacing:3px;font-size:12px}
+#chat{min-height:180px;max-height:42vh;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.msg{padding:12px 14px;border-radius:15px;background:#132b43;line-height:1.5;white-space:pre-wrap}.you{align-self:flex-end;background:#17415d;max-width:88%}.jarvis{max-width:94%}
+.controls{display:flex;gap:8px;margin-top:12px}.controls input{min-width:0;flex:1;background:#09192a;color:white;border:1px solid var(--line);border-radius:14px;padding:14px;font-size:16px}
+button{background:#15344e;color:var(--txt);border:1px solid #37617f;border-radius:14px;padding:12px 15px;font-size:15px}button:active{transform:scale(.98)}.quick{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.quick button{border-radius:30px;color:#bdeaff}
+.status{font-size:13px;color:var(--muted);margin-top:10px}.install{display:none;background:#0d3a55;border-color:var(--blue);width:100%;margin:4px 0 12px}
+footer{text-align:center;color:#7691aa;font-size:12px;margin-top:22px}
+</style>
+</head>
+<body><main>
+<div class="brand"><div class="logo">✧</div><div><h1>J.A.R.V.I.S.</h1><div class="sub">PERSONAL ASSISTANT</div></div></div>
+<button id="install" class="install">＋ Install JARVIS App</button>
+<section class="panel"><div class="tag">GOOD TO SEE YOU</div><h2>How can I help you?</h2><div class="muted">Your personal assistant is ready.</div>
+<div class="status" id="clock">Loading time…</div></section>
+<section class="panel"><div class="tag">JARVIS CONVERSATION</div><div id="chat"><div class="msg jarvis">Hello! I'm JARVIS. I can tell the time and date, do simple calculations, open websites, and speak replies. This demo does not yet connect to an online AI service.</div></div>
+<div class="controls"><input id="ask" placeholder="Ask JARVIS anything…" autocomplete="off"><button id="send">Send</button><button id="mic" aria-label="Speak">🎙</button></div>
+<div class="quick"><button data-q="What time is it?">What time is it?</button><button data-q="What is today's date?">Today's date</button><button data-q="Open YouTube">Open YouTube</button><button data-q="Open Google">Open Google</button></div>
+<div class="status" id="status">Voice features depend on your browser and permissions.</div></section>
+<footer>JARVIS PERSONAL ASSISTANT · WEB DEMO</footer>
+</main>
+<script>
+const chat=document.getElementById('chat'), ask=document.getElementById('ask'), statusEl=document.getElementById('status');
+function say(text){const d=document.createElement('div');d.className='msg jarvis';d.textContent=text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight;if('speechSynthesis'in window){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(text));}}
+function addYou(text){const d=document.createElement('div');d.className='msg you';d.textContent=text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight;}
+function reply(raw){let q=raw.trim(),s=q.toLowerCase();if(!q)return;addYou(q);ask.value='';
+if(s.includes('time'))say('The time is '+new Date().toLocaleTimeString());
+else if(s.includes('date')||s.includes('today'))say('Today is '+new Date().toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'}));
+else if(s.includes('hello')||s==='hi'||s.includes('vanakkam'))say('Hello! How can I help you?');
+else if(s.includes('youtube')){say('Opening YouTube.');window.open('https://www.youtube.com','_blank','noopener');}
+else if(s.includes('google')){say('Opening Google.');window.open('https://www.google.com','_blank','noopener');}
+else if(s.startsWith('calculate ')||s.startsWith('what is ')){let expr=q.replace(/^calculate\s+/i,'').replace(/^what is\s+/i,'').replace(/[×]/g,'*').replace(/[÷]/g,'/');if(/^[0-9+\-*/().\s%]+$/.test(expr)){try{let result=Function('"use strict";return ('+expr+')')();say('The answer is '+result);}catch(e){say('Sorry, I could not calculate that.');}}else say('I can calculate simple expressions. Try: calculate 25 * 4');}
+else say('I can help with time, date, simple calculations, and opening Google or YouTube. For general questions, an online AI connection needs to be added.');
+}
+document.getElementById('send').onclick=()=>reply(ask.value);
+ask.addEventListener('keydown',e=>{if(e.key==='Enter')reply(ask.value)});
+document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>reply(b.dataset.q));
+document.getElementById('mic').onclick=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){statusEl.textContent='Speech recognition is not supported in this browser. You can type instead.';return;}const r=new SR();r.lang='en-IN';r.onstart=()=>statusEl.textContent='Listening…';r.onresult=e=>{ask.value=e.results[0][0].transcript;reply(ask.value)};r.onerror=()=>statusEl.textContent='Microphone unavailable. Check browser permission.';r.onend=()=>statusEl.textContent='Voice features depend on your browser and permissions.';r.start();};
+function tick(){document.getElementById('clock').textContent=new Date().toLocaleString();}tick();setInterval(tick,1000);
+let deferredPrompt;const installBtn=document.getElementById('install');
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.style.display='block';});
+installBtn.onclick=async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;installBtn.style.display='none';};
+if('serviceWorker'in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script></body></html>
