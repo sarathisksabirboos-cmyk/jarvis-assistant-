@@ -39,16 +39,48 @@ footer{text-align:center;color:#7691aa;font-size:12px;margin-top:22px}
 const chat=document.getElementById('chat'), ask=document.getElementById('ask'), statusEl=document.getElementById('status');
 function say(text){const d=document.createElement('div');d.className='msg jarvis';d.textContent=text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight;if('speechSynthesis'in window){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(text));}}
 function addYou(text){const d=document.createElement('div');d.className='msg you';d.textContent=text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight;}
-function reply(raw){let q=raw.trim(),s=q.toLowerCase();if(!q)return;addYou(q);ask.value='';
-if(s.includes('time'))say('The time is '+new Date().toLocaleTimeString());
-else if(s.includes('date')||s.includes('today'))say('Today is '+new Date().toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'}));
-else if(s.includes('hello')||s==='hi'||s.includes('vanakkam'))say('Hello! How can I help you?');
-else if(s.includes('youtube')){say('Opening YouTube.');window.open('https://www.youtube.com','_blank','noopener');}
-else if(s.includes('google')){say('Opening Google.');window.open('https://www.google.com','_blank','noopener');}
-else if(s.startsWith('calculate ')||s.startsWith('what is ')){let expr=q.replace(/^calculate\s+/i,'').replace(/^what is\s+/i,'').replace(/[×]/g,'*').replace(/[÷]/g,'/');if(/^[0-9+\-*/().\s%]+$/.test(expr)){try{let result=Function('"use strict";return ('+expr+')')();say('The answer is '+result);}catch(e){say('Sorry, I could not calculate that.');}}else say('I can calculate simple expressions. Try: calculate 25 * 4');}
-else say('I can help with time, date, simple calculations, and opening Google or YouTube. For general questions, an online AI connection needs to be added.');
-}
-document.getElementById('send').onclick=()=>reply(ask.value);
+const JARVIS_API = 'https://jarvis-ai.sarathisksabirboos.workers.dev';
+const history = [];
+
+async function reply(raw) {
+  let q = raw.trim();
+  if (!q) return;
+
+  addYou(q);
+  ask.value = '';
+
+  statusEl.textContent = 'JARVIS is thinking...';
+
+  try {
+    const response = await fetch(JARVIS_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: q,
+        history: history
+      })
+    });
+
+    if (!response.ok) throw new Error('Server error: ' + response.status);
+
+    const data = await response.json();
+    if (!data.reply) throw new Error('No reply received');
+
+    history.push(
+      { role: 'user', parts: [{ text: q }] },
+      { role: 'model', parts: [{ text: data.reply }] }
+    );
+
+    if (history.length > 20) history.splice(0, 2);
+
+    say(data.reply);
+    statusEl.textContent = 'JARVIS AI Online';
+
+  } catch (error) {
+    say('AI connection failed. Please try again.');
+    statusEl.textContent = 'Connection error';
+  }
+}document.getElementById('send').onclick=()=>reply(ask.value);
 ask.addEventListener('keydown',e=>{if(e.key==='Enter')reply(ask.value)});
 document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>reply(b.dataset.q));
 document.getElementById('mic').onclick=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){statusEl.textContent='Speech recognition is not supported in this browser. You can type instead.';return;}const r=new SR();r.lang='en-IN';r.onstart=()=>statusEl.textContent='Listening…';r.onresult=e=>{ask.value=e.results[0][0].transcript;reply(ask.value)};r.onerror=()=>statusEl.textContent='Microphone unavailable. Check browser permission.';r.onend=()=>statusEl.textContent='Voice features depend on your browser and permissions.';r.start();};
